@@ -1,0 +1,410 @@
+$(function() {
+	$('#service_date').datetimepicker({format: 'DD MMM YYYY'});
+	$('#from-date').datetimepicker({format: 'DD MMM YYYY'});
+	$('#to-date').datetimepicker({format: 'DD MMM YYYY'});
+	$('#user_dob').datetimepicker({format: 'DD MMM YYYY'});
+ });
+$(document).ready(function() {
+	$("#user-form").validate({
+		rules: {
+			user_division: "required",
+			user_zone: "required",
+			shop_id: "required",
+			user_type: "required",
+			section_id: "required",
+			user_email: "required",
+			user_pin: {
+							required : true,
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+					    },
+			user_cpin: {
+							required : true,
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+							equalTo: "#user_pin"
+					    },
+			user_pass: {
+							required : true,
+					    },
+			user_cpass: {
+							required : true,
+							equalTo: "#user_pass"
+							
+					    },
+			user_phone: {
+							required : true,
+							minlength : 10,
+							maxlength : 10,
+							number : true,
+					    },
+			user_zipcode: {
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+						},
+		},
+		messages:{
+			'user_cpass':{
+				equalTo:'Confirm password should be same as password.'
+			},
+			'user_cpin':{
+				equalTo:'Confirm pin should be same as pin.'
+			}
+		}
+	});
+	$("#zone-form").validate({
+		rules: {
+			zone_code: "required",
+			zone_name: "required",
+		}
+	});
+	$("#type-form").validate({
+		rules: {
+			type_code: "required",
+			type_name: "required",
+		}
+	});
+	$("#category-form").validate({
+		rules: {
+			category_code: "required",
+			category_name: "required",
+		}
+	});
+	$("#division-form").validate({
+		rules: {
+			division_code: "required",
+			division_name: "required",
+			zone_id: "required",
+		}
+	});
+	$("#hardware-form").validate({
+		rules: {
+			hardware_number: "required",
+			hardware_name: "required",
+			service_frequency_count: "required",
+			service_frequency_cycle: "required",
+			service_date: "required",
+		}
+	});
+	$("#assign-hardware-form").validate({
+		rules: {
+			hardware_serial_no: "required",
+			shop_id: "required",
+			section_id: "required",
+			service_date: "required",
+		}
+	});
+	$("#shop-form").validate({
+		rules: {
+			shop_name: "required",
+		}
+	});
+	$("#section-form").validate({
+		rules: {
+			shop_id: "required",
+			section_code: "required",
+			section_name: "required",
+		}
+	});
+	$("#changepass-form").validate({
+		rules: {
+			user_pass: {
+							required : true,
+					    },
+			user_cpass: {
+							required : true,
+							equalTo: "#user_pass"
+							
+					    },
+		},
+		messages:{
+			'user_cpass':{
+				equalTo:'Confirm password should be same as password.'
+			}
+		}
+	});
+});
+function readURL(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    
+    reader.onload = function(e) {
+      $('#profile_pic').attr('src', e.target.result);
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+$("#user_profile_pic").change(function() {
+  readURL(this);
+});
+function hardwareImage(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();    
+    reader.onload = function(e) {
+      $('#hardware_pic').attr('src', e.target.result);
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+$("#hardware_image").change(function() {
+  hardwareImage(this);
+});
+function doconfirm()
+{
+    job=confirm("Are you sure to delete this item?");
+    if(job!=true)
+    {
+        return false;
+    }
+}
+$(function(){
+   $("#user_type").on('change',function(){
+		var user_type = $(this).val(); 
+		if(user_type == 'ShI'){
+			$('#section_id').attr("disabled", true); 
+		}else if(user_type == 'MG'){
+			$('#section_id').attr("disabled", true);  
+			$('#shop_id').attr("disabled", true); 
+		}else{
+			$('#section_id').removeAttr("disabled");  
+			$('#shop_id').removeAttr("disabled");
+		}
+		console.log(user_type);return false;
+   });
+}); 
+
+$(function(){
+	$('#hardwaredatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#userdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#categorydatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#typedatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#divisiondatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#zonedatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#shopdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#sectiondatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#ticketdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#maintenancelogdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){ 
+	$('#searchByStatus').on('change', function() {
+	$( "#statusChnage" ).submit();
+   });
+}); 
+
+window.onload = function() {
+    var $recaptcha = document.querySelector('#g-recaptcha-response');
+
+    if($recaptcha) {
+        $recaptcha.setAttribute("required", "required");
+    }
+};
+
+$(function(){ 
+	var base_url 	= window.location.origin;
+	$("#user_zone").change(function(){
+		var $option = $(this).find('option:selected');
+		var zone = $option.val();	  
+		$.ajax({
+			url: 'getDivisionByZone',
+			data: {'zone': zone}, 
+			type: "post",
+			success: function(data){
+				$("#user_division").html(data);
+			}
+		});
+	});
+	$("#hardware_shop_id").change(function(){
+		var $option = $(this).find('option:selected');
+		var shop_id = $option.val();	  
+		$.ajax({
+			url: base_url+'/hardwares/getSectionByShop',
+			data: {'shop_id': shop_id}, 
+			type: "post",
+			success: function(data){
+				$("#hardware_section_id").html(data);
+			}
+		});
+	});
+	var dialog;
+	dialog = $("#hardwarelist").dialog({
+		autoOpen: false,
+		height: 300,
+		width: 350,
+		modal: true,
+		buttons: {
+		Cancel: function () {
+			dialog.dialog("close");
+		}
+		},
+		close: function () {
+
+		}
+	});
+
+	$( "#choose_hardware" ).on( "click", function() {
+		dialog.dialog( "open" );
+	});
+}); 

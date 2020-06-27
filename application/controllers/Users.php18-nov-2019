@@ -1,0 +1,658 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Users extends CI_Controller {
+	public function __construct()
+	{
+		parent::__construct();
+		$this->load->database();
+		$this->load->helper(array('form', 'url'));
+		$this->load->library('form_validation');
+		$this->load->library('session');
+		$this->load->model('Users_model'); 
+		$this->load->model('Divisions_model'); 
+		$this->load->model('Zones_model'); 
+		$this->load->model('Shops_model'); 
+		$this->load->model('Sections_model'); 
+		$loggedInAdmin 	= $this->session->userdata('loggedInAdmin');
+		if(empty($loggedInAdmin)){
+			redirect('login');
+		}
+		$config = array(
+				'upload_path' 		=> "./uploads/",
+				'allowed_types' 	=> "jpg|png|jpeg",
+				'overwrite' 		=> TRUE,
+				'max_size'			=> "2048000",
+			);
+		$this->load->library('upload', $config);
+	}
+	public function index()
+	{
+		$user_status = $this->input->post('user_status');
+		$user_ids = $this->input->post('user_ids');
+		// echo $user_status;
+		// exit;
+		$data['title'] 	= 'Users';
+		$status			=  $this->input->get('searchByStatus');
+		$loggedInAdmin 			= $this->session->userdata('loggedInAdmin');
+		$data['userData'] 		= $this->Users_model->getUser($loggedInAdmin);
+		$data['userstatus'] 		= $this->Users_model->getStatus($user_status, $user_ids);	
+		// echo "<pre>";
+		// print_r($data['userData']);
+		// exit; 		
+		$data['status'] 		= $status;	
+		$this->load->view('header',$data);
+		$this->load->view('users/index',$data);
+		$this->load->view('footer',$data);
+	}
+	public function alladmin()
+	{
+		$data['title'] 	= 'Users';
+		$status			=  $this->input->get('searchByStatus');
+		if( $status === NULL ){
+			$status					= '10';
+			$data['userData'] 		= $this->Users_model->getFilterUser($status); 
+		}elseif($status == 'all'){			
+			$data['userData'] 		= $this->Users_model->getAdmin();	 		
+		}else{			
+			$data['userData'] 		= $this->Users_model->getFilterUser($status);	
+		}
+		//echo "<pre>";print_r($data['userData']);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+		$loggedInAdmin 			= $this->session->userdata('loggedInAdmin');
+		//$data['userData'] 		= $this->Users_model->getUser();	 		
+		$data['status'] 		= $status;	
+		$this->load->view('header',$data);
+		$this->load->view('users/alladmin',$data);
+		$this->load->view('footer',$data);
+	}
+	public function addAdmin()
+	{
+
+		$data['title'] 			= 'Add User';
+		$data['loginType'] 		= $this->Users_model->getRoleType();
+		$data['divisionData'] 	= $this->Divisions_model->getDivision();
+		$data['zoneData'] 		= $this->Zones_model->getZone();
+		$data['shopData'] 		= $this->Shops_model->getShop();
+		$data['sectionData'] 	= $this->Sections_model->getSection();
+		$data['getData']		= $this->input->get();
+		if($this->input->post('submit')){
+			$gRecaptchaResponse = $this->input->post('g-recaptcha-response');
+			$errMsg = "";
+			if(isset($gRecaptchaResponse) && !empty($gRecaptchaResponse))
+			{
+				$secret = '6LepE8IUAAAAAMjqvAmbtMgWsEWPvhN0oO64iGbx';
+				$verifyResponse = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$secret.'&response='.$gRecaptchaResponse);
+				$responseData = json_decode($verifyResponse);
+				if($responseData->success){
+					$succMsg = 'Your contact request have submitted successfully.';
+				}else{
+					$errMsg = 'Robot verification failed, please try again.';
+					//$data['errMsg'] = $errMsg;
+					$this->load->view('login');
+				}
+			}
+			$this->form_validation->set_rules('user_email','Email id','required|valid_email|is_unique[user_info_tbl.user_email]');
+			$this->form_validation->set_rules('user_phone','Mobile Number','required|is_unique[user_info_tbl.user_mobile]');
+			if($this->form_validation->run()){
+				$postData = $this->input->post(); 
+				unset($postData['submit']);
+				if(!empty($data['getData'])){
+					$postData['user_zone'] 		= $data['getData']['zoneId'];	
+					$postData['user_division'] 	= $data['getData']['divisionId'];
+				}				
+				$currentDate	= date('Y-m-d h:i:s a', time());
+				if(!empty($postData['user_dob'])){
+					$date 						= date_create($postData['user_dob']);
+					$postData['user_dob'] 		= date_format($date,"Y-m-d");
+				}
+				$postData['user_pass'] 		= md5($postData['user_pass']);
+				$uploadedData 				= [];
+				if($this->upload->do_upload('user_profile_pic'))
+				{
+					$upload_data 	= array('upload_data' => $this->upload->data());
+					$uploadedData	= $upload_data['upload_data'];
+				}
+				else
+				{
+					$error = array('error' => $this->upload->display_errors());
+				}
+				if(empty($postData['section_id'])){
+					$postData['section_id'] = 'Null';
+				}
+				if(empty($postData['shop_id'])){
+					$postData['shop_id'] = 'Null';
+				}
+				if(!empty($uploadedData['file_name'])){
+					$postData['user_profile_pic'] = $uploadedData['file_name'];
+				}					
+				$postData['user_status'] = '10';
+				$user_type      =  $postData['user_type'];
+				$currentUserId 	= $this->session->userdata('loggedInAdmin');
+				if(isset($postData['shop_id'])){
+					$shop_id        =  $postData['shop_id'];
+				}else{
+					$shop_id =  '';			
+				}
+				if(isset($postData['shop_id'])){
+					$section_id     =  $postData['section_id'];
+				}else{
+					$section_id =  '';			
+				}
+				$user_f_name    =  $postData['user_f_name'];
+				$user_l_name    =  $postData['user_l_name'];
+				$user_email     =  $postData['user_email'];
+				$user_phone     =  $postData['user_phone'];
+				$user_pass      =  $postData['user_pass'];
+				$user_pin      	=  $postData['user_pin'];
+				$user_division  =  $postData['user_division']; 
+				$user_zone      =  $postData['user_zone'];
+				$user_address   =  $postData['user_address'];
+				$user_dob       =  $postData['user_dob'];
+				$user_gender    =  $postData['user_gender'];
+				if(isset($postData['user_profile_pic'])){
+					$user_profile_pic =  $postData['user_profile_pic'];
+				}else{
+					$user_profile_pic =  'no-available.jpg';			
+				}
+				$user_status 	= $postData['user_status'];
+				$userInfoData 	= array(
+									'user_zone'   		=>  $user_zone,
+									'user_division'   	=>  $user_division,
+									'user_role'   		=>  $user_type,
+									'user_email'   		=>  $user_email,
+									'user_mobile'   	=>  $user_phone,
+									'user_pin'   		=>  $user_pin,
+									'user_pass'   		=>  $user_pass,
+									'user_status'   	=>  $user_status,
+									'user_add_date'   	=>  $currentDate,
+									'user_created_by'   =>  $currentUserId,
+								);
+				if(isset($userInfoData)){
+					$table 		= 'user_info_tbl';
+					$insertedUserId = $this->Users_model->insertAdmin($userInfoData,$table);
+					if(isset($insertedUserId)){
+						$userPersonalData 	= array(
+											'user_info_id'   	=>  $insertedUserId,
+											'user_f_name'   	=>  $user_f_name,
+											'user_l_name'   	=>  $user_l_name,
+											'user_dob'   		=>  $user_dob,
+											'user_gender'   	=>  $user_gender,
+											'user_profile_pic'  =>  $user_profile_pic,
+											'user_add_date'   	=>  $currentDate,
+											'user_created_by'   =>  $currentUserId,
+										);
+						$tables 		= 'user_details_tbl';
+						$insertedDetailId = $this->Users_model->insertAdmin($userPersonalData,$tables);
+						if(isset($insertedDetailId)){
+							$this->session->set_flashdata('success', 'User Added successfully');
+							redirect('users/alladmin');
+						}else{
+							$this->session->set_flashdata('error', 'Somthing went worng. Error!!');
+							redirect('users/alladmin');
+						} 
+					}else{
+						$this->session->set_flashdata('error', 'Somthing went worng. Error!!');
+						redirect('users/alladmin');
+					} 
+				}
+				
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('users/add_admin',$data);
+				$this->load->view('footer',$data);	
+			}
+		}else{
+			$this->load->view('header',$data);
+			$this->load->view('users/add_admin',$data);
+			$this->load->view('footer',$data);
+		}
+	}
+	public function editAdmin($id)
+	{
+		$data['title'] 				= 'Edit User';
+		$getUserDataBy['user_id']	= $id;
+		$data['editedId'] 			= $id;
+		$editUserData				= $this->Users_model->getUserById($id);
+		$data['editUserData'] 		= $editUserData;
+		$data['loginType'] 			= $this->Users_model->getRoleType();
+		$data['divisionData'] 		= $this->Divisions_model->getDivision();
+		$data['zoneData'] 			= $this->Zones_model->getZone();
+		if($this->input->post('update')){
+			$userDataById 			= $data['editUserData'];
+			$postData 				= $this->input->post();
+			unset($postData['update']);
+			$uploadedData 				= [];
+			if($this->upload->do_upload('user_profile_pic'))
+			{
+				$upload_data 	= array('upload_data' => $this->upload->data());
+				$uploadedData	= $upload_data['upload_data'];
+			}
+			else
+			{
+				$error = array('error' => $this->upload->display_errors());
+			}
+			if(!empty($uploadedData['file_name'])){
+				$postData['user_profile_pic'] = $uploadedData['file_name'];
+			}
+			if(isset($postData['user_profile_pic'])){
+				$user_profile_pic =  $postData['user_profile_pic'];
+			}else{
+				if(!empty($editUserData->user_profile_pic)){
+					$user_profile_pic =  $editUserData->user_profile_pic;			
+				}else{
+					$user_profile_pic =  'no-available.jpg';
+				}					
+			}
+			//echo "<pre>";print_r($user_profile_pic);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+			$date 						= date_create($postData['user_dob']);
+			$postData['user_dob'] 		= date_format($date,"Y-m-d");
+			$user_f_name        		= $postData['user_f_name'];
+			$user_l_name        		= $postData['user_l_name'];
+			$user_address       		= $postData['user_address'];
+			$user_dob           		= $postData['user_dob'];
+			$user_gender        		= $postData['user_gender'];
+			$user_division      		= $postData['user_division'];   
+			$user_email      			= $postData['user_email'];   
+			$user_mobile      			= $postData['user_phone'];   
+			$currentDate	 			= date('Y-m-d h:i:s a', time());
+			$currentUserId 				= $this->session->userdata('loggedInAdmin');
+			$updatedInfoData       	 	= array(
+				'user_division'     	=> $user_division,
+				'user_email'     		=> $user_email,
+				'user_mobile'     		=> $user_mobile,
+				'user_update_date'     	=> $currentDate,
+				'user_updated_by'     	=> $currentUserId,
+			);
+			$updatedData       	 		= array(
+				'user_f_name'       	=> $user_f_name,
+				'user_l_name'       	=> $user_l_name,
+				'user_address'      	=> $user_address,
+				'user_dob'          	=> $user_dob,
+				'user_gender'       	=> $user_gender,
+				'user_profile_pic'  	=> $user_profile_pic,
+				'user_update_date'     	=> $currentDate,
+				'user_updated_by'     	=> $currentUserId,
+			); 
+			$this->form_validation->set_rules('user_email','Email id','required|valid_email|is_unique[user_info_tbl.user_email]');
+			$this->form_validation->set_rules('user_phone','Mobile Number','required|is_unique[user_info_tbl.user_mobile]');
+			if($this->form_validation->run()){
+				if(!empty($updatedInfoData)){
+					$table = 'user_info_tbl';
+					$query = $this->Users_model->updateUser($updatedInfoData,$id,$table);
+					if($query){
+						if(!empty($updatedInfoData)){
+							$tables = 'user_details_tbl';
+							$newquery 	= $this->Users_model->updateUser($updatedData,$id,$tables);
+							if($newquery){
+								$this->session->set_flashdata('updateUser', 'Updated User successfully');
+								redirect('users/editUser/'.$id);
+							}else{
+								$this->session->set_flashdata('errorUser', 'Somthing went worng. Error!!');
+								redirect('users/editUser/'.$id);
+							}
+						}
+					}else{
+						$this->session->set_flashdata('errorUser', 'Somthing went worng. Error!!');
+						redirect('users/editUser/'.$user_id);
+					}
+				}
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('users/edit_user',$data);
+				$this->load->view('footer',$data);
+			}
+		}else{
+			$this->load->view('header',$data);
+			$this->load->view('users/edit_user',$data);
+			$this->load->view('footer',$data);
+		}
+	}
+	public function viewUser($id)
+	{
+		$data['title'] 				= 'View User';
+		$viewUserData				= $this->Users_model->getUserById($id);
+		//echo "<pre>";print_r();echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+		$data['divisionData'] 		= $this->Divisions_model->getDivision();
+		$data['zoneData'] 			= $this->Zones_model->getZone();
+		if(!empty($viewUserData)){
+			$data['userDataById'] 	= $viewUserData;
+			$data['editedId'] 		= $id;
+			$this->load->view('header',$data);
+			$this->load->view('users/view_user',$data);
+			$this->load->view('footer',$data);
+		}else{
+			redirect('users');
+		}
+	}
+    public function deleteUser($id)
+	{
+		$data['title'] 		= 'Delete User';
+		$table 				= 'user_info_tbl';
+		$currentDate	 	= date('Y-m-d h:i:s a', time());
+		$currentUserId 		= $this->session->userdata('loggedInAdmin');
+		$postData			= array(
+								'user_status' 		 => '0',
+								'user_update_date'   => $currentDate,
+								'user_updated_by'    => $currentUserId,
+							);
+		$query 				= $this->Users_model->deleteUser($postData,$id,$table);
+		if($query){
+			$this->session->set_flashdata('success', 'Deleted User successfully');
+			if($currentUserId == '1'){
+				redirect('users/alladmin');
+			}else{
+				redirect('users');				
+			}
+		}else{
+			$this->session->set_flashdata('error', 'Somthing went worng. Error!!');
+			if($currentUserId == '1'){
+				redirect('users/alladmin');
+			}else{
+				redirect('users');				
+			}
+		} 
+	}
+	public function activateUser($id)
+	{
+		$data['title'] 		= 'Activate User';
+		$table 				= 'user_info_tbl';
+		$currentDate	 	= date('Y-m-d h:i:s a', time());
+		$currentUserId 		= $this->session->userdata('loggedInAdmin');
+		$postData			= array(
+								'user_status' 		 => '10',
+								'user_update_date'   => $currentDate,
+								'user_updated_by'    => $currentUserId,
+							);
+		$query 				= $this->Users_model->activateUser($postData,$id,$table);
+		if($query){
+			$this->session->set_flashdata('success', 'Activated User successfully');
+			if($currentUserId == '1'){
+				redirect('users/alladmin');
+			}else{
+				redirect('users');				
+			}
+		}else{
+			$this->session->set_flashdata('error', 'Somthing went worng. Error!!');
+			if($currentUserId == '1'){
+				redirect('users/alladmin');
+			}else{
+				redirect('users');				
+			}
+		} 
+	}
+	public function getDivisionByZone()
+	{
+		$postData 		= $this->input->post();
+		$zoneId 		= $postData['zone'];
+		$divisions 		= $this->Divisions_model->getDivisionByZone($zoneId);
+		$divisionList 	= '';
+		foreach($divisions as $division){
+			$divisionList .= '<option value="'.$division->division_id.'">'.$division->division_name.'</option>';
+		}
+		print_r($divisionList);
+	}
+	public function changePass($id)
+	{
+		$data['title'] 	= 'Change Password';
+		$data['userId'] = $id;
+		if($this->input->post('submit')){
+			$postData = $this->input->post();
+			unset($postData['user_cpass']);
+			unset($postData['submit']);
+			if(!empty($postData['user_pass'])){
+				$postData['user_pass'] 		= md5($postData['user_pass']);
+			}
+			$table = 'user_info_tbl';
+			$query = $this->Users_model->changePass($postData,$id,$table);
+			if($query){
+				$this->session->set_flashdata('success', 'Password has been changed successfully');
+				redirect('users/changePass/'.$id);
+			}else{
+				$this->session->set_flashdata('error', 'Somthing went worng. Error!!');
+				redirect('users/changePass/'.$id);
+			} 			
+		}else{		
+			$this->load->view('header',$data);
+			$this->load->view('users/changepass',$data);
+			$this->load->view('footer',$data);
+		}
+	}
+	/**** Neha Code ******/
+	public function addUser()
+	{
+
+		$data['title'] 			= 'Add User';
+		$data['loginType'] 		= $this->Users_model->getLoginType();
+		$data['divisionData'] 	= $this->Divisions_model->getDivision();
+		$data['zoneData'] 		= $this->Zones_model->getZone();
+		
+		$data['shopData'] 		= $this->Shops_model->getShop();
+		$data['sectionData'] 	= $this->Sections_model->getSection();
+		$data['getData']		= $this->input->get();
+		$loggedInDetail 	= $this->session->userdata('loggedInDetail');
+
+		$loggedInAdmin 	= $this->session->userdata('loggedInAdmin');
+		$data['zoneDataadmin'] 		= $this->Zones_model->getZonebyadmin($loggedInAdmin);
+		$data['divisionDataadmin'] 		= $this->Divisions_model->getDivisionByadmin($loggedInAdmin);			
+		if($this->input->post('submit')){
+		
+			$this->form_validation->set_rules('user_email','Email id','required|valid_email|is_unique[user_info_tbl.user_email]');
+			$this->form_validation->set_rules('user_phone','Mobile Number','required|is_unique[user_info_tbl.user_mobile]');
+			//$this->form_validation->set_rules('user_cpass', 'Confirm Password', 'required|matches[user_pass]');
+			//$this->form_validation->set_rules('user_cpin', 'Confirm Pin', 'required|matches[user_pin]');
+			$config = array(
+					'upload_path' 		=> "./uploads/",
+					'allowed_types' 	=> "jpg|png|jpeg",
+					'overwrite' 		=> TRUE,
+					'max_size'			=> "2048000",
+				);
+			$this->load->library('upload', $config);
+			if($this->form_validation->run()){
+				$postData = $this->input->post(); 
+				unset($postData['register']);
+				// if(!empty($data['getData'])){
+				// 	$postData['user_zone'] 		= $data['getData']['zoneId'];	
+				// 	$postData['user_division'] 	= $data['getData']['divisionId'];
+				// }	
+				// $postData['user_zone']	= $this->input->post('user_zone');
+				// $postData['user_division']	= $this->input->post('user_division');
+				$postData['loggedInAdmin']	= $loggedInAdmin;			
+				$postData['currentDate']	= date('Y-m-d h:i:s a', time());
+				$date 						= date_create($postData['user_dob']);
+				$postData['user_dob'] 		= date_format($date,"Y-m-d");
+				$postData['user_pass'] 		= md5($postData['user_pass']);
+				$uploadedData 				= [];
+				if($this->upload->do_upload('user_profile_pic'))
+				{
+					$upload_data 	= array('upload_data' => $this->upload->data());
+					$uploadedData	= $upload_data['upload_data'];
+				}
+				else
+				{
+					$error = array('error' => $this->upload->display_errors());
+				}
+				if(empty($postData['section_id'])){
+					$postData['section_id'] = 'Null';
+				}
+				if(empty($postData['shop_id'])){
+					$postData['shop_id'] = 'Null';
+				}
+				$postData['user_profile_pic'] = $uploadedData['file_name'];			
+				$postData['user_status'] = '10';
+				//echo "<pre>";print_r($postData);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );				
+				$responce = $this->Users_model->insertAdmin($postData);
+					if($responce){
+			            $this->session->set_flashdata('success', 'User Added successfully');
+			           // redirect($pageUrl . '/users');
+			            redirect('users');
+			        }else{
+			            $this->session->set_flashdata('error', 'Somthing went worng. Error!!');
+			            //redirect($pageUrl . '/users');
+			            redirect('users');
+			        } 				
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('users/add_user',$data);
+				$this->load->view('footer',$data);	
+			}
+		}else{
+			$this->load->view('header',$data);
+			$this->load->view('users/add_user',$data);
+			$this->load->view('footer',$data);
+		}
+	}
+	public function editUser($id)
+	{
+		$data['title'] 				= 'Edit User';
+		$getUserDataBy['user_id']	= $id;
+		$data['editedId'] 			= $id;
+		$editUserData				= $this->Users_model->getUserById($id);
+		$data['editUserData'] 		= $editUserData;
+		$data['loginType'] 			= $this->Users_model->getLoginType();
+		$data['divisionData'] 		= $this->Divisions_model->getDivision();
+		$data['zoneData'] 			= $this->Zones_model->getZone();
+		if($this->input->post('update')){
+			$userDataById 			= $data['editUserData'];
+			$postData 				= $this->input->post();
+			unset($postData['update']);
+			$uploadedData 				= [];
+			if($this->upload->do_upload('user_profile_pic'))
+			{
+				$upload_data 	= array('upload_data' => $this->upload->data());
+				$uploadedData	= $upload_data['upload_data'];
+			}
+			else
+			{
+				$error = array('error' => $this->upload->display_errors());
+			}
+			if(!empty($uploadedData['file_name'])){
+				$postData['user_profile_pic'] = $uploadedData['file_name'];
+			}
+			if(isset($postData['user_profile_pic'])){
+				$user_profile_pic =  $postData['user_profile_pic'];
+			}else{
+				if(!empty($editUserData->user_profile_pic)){
+					$user_profile_pic =  $editUserData->user_profile_pic;			
+				}else{
+					$user_profile_pic =  'no-available.jpg';
+				}					
+			}
+			//echo "<pre>";print_r($user_profile_pic);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+			$date 						= date_create($postData['user_dob']);
+			$postData['user_dob'] 		= date_format($date,"Y-m-d");
+			$user_f_name        		= $postData['user_f_name'];
+			$user_l_name        		= $postData['user_l_name'];
+			$user_address       		= $postData['user_address'];
+			$user_dob           		= $postData['user_dob'];
+			$user_gender        		= $postData['user_gender'];
+			$user_division      		= $postData['user_division'];   
+			$user_email      			= $postData['user_email'];   
+			$user_mobile      			= $postData['user_phone'];   
+			$currentDate	 			= date('Y-m-d h:i:s a', time());
+			$currentUserId 				= $this->session->userdata('loggedInAdmin');
+			$updatedInfoData       	 	= array(
+				'user_division'     	=> $user_division,
+				'user_email'     		=> $user_email,
+				'user_mobile'     		=> $user_mobile,
+				'user_update_date'     	=> $currentDate,
+				'user_updated_by'     	=> $currentUserId,
+			);
+			$updatedData       	 		= array(
+				'user_f_name'       	=> $user_f_name,
+				'user_l_name'       	=> $user_l_name,
+				'user_address'      	=> $user_address,
+				'user_dob'          	=> $user_dob,
+				'user_gender'       	=> $user_gender,
+				'user_profile_pic'  	=> $user_profile_pic,
+				'user_update_date'     	=> $currentDate,
+				'user_updated_by'     	=> $currentUserId,
+			); 
+			$this->form_validation->set_rules('user_email','Email id','required|valid_email|is_unique[user_info_tbl.user_email]');
+			$this->form_validation->set_rules('user_phone','Mobile Number','required|is_unique[user_info_tbl.user_mobile]');
+			if($this->form_validation->run()){
+				if(!empty($updatedInfoData)){
+					$table = 'user_info_tbl';
+					$query = $this->Users_model->updateUser($updatedInfoData,$id,$table);
+					if($query){
+						if(!empty($updatedInfoData)){
+							$tables = 'user_details_tbl';
+							$newquery 	= $this->Users_model->updateUser($updatedData,$id,$tables);
+							if($newquery){
+								$this->session->set_flashdata('updateUser', 'Updated User successfully');
+								redirect('users/editUser/'.$id);
+							}else{
+								$this->session->set_flashdata('errorUser', 'Somthing went worng. Error!!');
+								redirect('users/editUser/'.$id);
+							}
+						}
+					}else{
+						$this->session->set_flashdata('errorUser', 'Somthing went worng. Error!!');
+						redirect('users/editUser/'.$user_id);
+					}
+				}
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('users/edit_user',$data);
+				$this->load->view('footer',$data);
+			}
+		}else{
+			$this->load->view('header',$data);
+			$this->load->view('users/edit_user',$data);
+			$this->load->view('footer',$data);
+		}
+	}
+	public function assignUser($id)
+	{
+		$shop_id 					= $this->input->post('shop_id');
+		$data['title'] 				= 'Assign Shop';
+		$data['editedId'] 			= $id;
+		$editUserData				= $this->Users_model->getUserById($id);
+		$data['editUserData'] 		= $editUserData;
+		$data['loginType'] 			= $this->Users_model->getLoginType();
+		$data['divisionData'] 		= $this->Divisions_model->getDivision();
+		$data['zoneData'] 			= $this->Zones_model->getZone();
+		$data['usershop'] 			= $this->Users_model->getUserShop();
+		$data['usersection'] 		= $this->Users_model->getShopSection($shop_id);
+
+		$last = $this->uri->total_segments();
+		$getuserid = $this->uri->segment($last);
+		$data['shopidByuser'] 		= $this->Users_model->getshopbyuser($getuserid);
+		//$shop_id = $data['shopidByuser']->shop_id;
+
+		$data['sectionidByuser'] 		= $this->Users_model->getsectionbyuser($getuserid);		
+		//$data['getallsection'] 		= $this->Users_model->getallsection($shop_id);
+
+ if ($this->input->server('REQUEST_METHOD') === "POST") {
+		$this->form_validation->set_rules('shop_type', 'Shop Name', 'trim|required');
+		$this->form_validation->set_rules('section_type', 'Section Name', 'trim|required');
+	if ($this->form_validation->run()) {
+								 $responce = $this->Users_model->assignSection([
+						                        'user_info_id'    => $this->input->post('info_id'),
+						                        'shop_id'  => $this->input->post('shop_type'),
+						                        'section_id'=> $this->input->post('section_type'),
+						                        'user_map_add_date'      => date('Y-m-d H:i:s'),
+						                    ]
+						                );
+						            if($responce){
+						                $this->session->set_flashdata('updateUser', 'Shop assigned successfully');
+													redirect('users/assignUser/'.$id);
+						            }
+    }        
+}		
+			$this->load->view('header',$data);
+			$this->load->view('users/assign_user',$data);
+			$this->load->view('footer',$data);
+		}
+		public function getSectionByShop()
+	{
+		$postData 		= $this->input->post();
+		$shopId 		= $postData['shop_id'];
+		$sections 		= $this->Users_model->getShopSection($shopId);
+		$html = "";
+        foreach($sections as $res){
+            $html .= '<option value="'.$res->section_id.'">'.$res->section_name.'</option>'; 
+        }
+		print_r($html);
+	}
+	/**** Neha Code ******/
+}

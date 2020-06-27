@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Login Form</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>/assets/css/util.css">
+	<link rel="stylesheet" type="text/css" href="<?php echo base_url(); ?>/assets/css/main.css">
+	<script src="<?php echo base_url(); ?>assets/vendors/jquery/dist/jquery.min.js"></script>
+	<script src="<?php echo base_url(); ?>assets/dashboard/js/jquery.validate.min.js"></script>
+	<script>
+		$(document).ready(function() {
+			$("#login-form").validate({
+				rules: {
+					admin_user: "required",
+					admin_pass: "required",
+				}
+			});
+		});
+	</script>
+	<style>
+		.error{
+		    margin-left: 15px;
+		    color: #b93426;
+		}
+		#admin_pass{
+			margin-top:10px;
+		}
+	</style>
+<!--===============================================================================================-->
+</head>
+<body>
+	
+	<div class="limiter">
+		<div class="container-login100">
+			<div class="wrap-login100 p-l-55 p-r-55 p-t-65 p-b-50">
+				 <?php 
+	                $attributes = array('class' => 'login100-form validate-form','id'=> 'login-form');
+	                echo form_open('login', $attributes); 
+	            ?>
+				<form class="login100-form validate-form">
+					<span class="login100-form-title p-b-33">
+						Admin Login
+					</span>
+					<div class="wrap-input100 validate-input">
+						<?php                               
+                            $data = array(
+                                    'name'              => 'admin_user',
+                                    'id'                => 'admin_user',
+                                    'value'             => set_value('admin_user'),
+                                    'class'             => 'input100',
+                                    'placeholder'		=> 'User Name'
+                            );
+                            echo form_input($data);
+                            echo form_error('admin_user', '<div class="text-danger">', '</div>');
+                        ?>
+						<span class="focus-input100-1"></span>
+						<span class="focus-input100-2"></span>
+					</div>
+					<div class="wrap-input100 rs1 validate-input">
+						<?php 								
+							$data = array(
+									'name'  			=> 'admin_pass',
+									'id'    			=> 'admin_pass',
+									'value' 			=> set_value('admin_pass'),
+									'class' 			=> 'input100',
+									'maxlength' 		=> '6',
+									'placeholder'		=> 'Password'
+							);
+							echo form_password($data);
+							echo form_error('admin_pass', '<div class="text-danger">', '</div>');
+						?>
+						<span class="focus-input100-1"></span>
+						<span class="focus-input100-2"></span>
+					</div>
+					<div class="container-login100-form-btn m-t-20">
+						<?php 
+							echo form_submit('login', 'Sign in', "class='login100-form-btn'");
+						?>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

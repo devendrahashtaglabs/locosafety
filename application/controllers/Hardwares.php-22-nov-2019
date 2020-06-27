@@ -1,0 +1,404 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+class Hardwares extends CI_Controller {
+    
+	public function __construct()
+	{
+		parent::__construct();
+		$this->load->database();
+		$this->load->model('Hardwares_model'); 
+		$this->load->model('Categories_model');
+		$this->load->model('Types_model');
+		$this->load->model('Shops_model');
+		$this->load->model('Sections_model');
+		$this->load->model('Maintenance_shops_model');  
+		$this->load->model('Maintenance_sections_model');  
+		$loggedInAdmin 	= $this->session->userdata('loggedInAdmin');
+		if(empty($loggedInAdmin)){
+			redirect('login');
+		}
+	}
+	public function index(){
+		$data['title'] 			= 'Hardware List';
+		$status					=  $this->input->get('searchByStatus');
+		if( $status === NULL ){
+			$status					= '10';
+			$data['hardwareData'] 	= $this->Hardwares_model->getStatusFilter($status);
+		}elseif($status == 'all'){			
+			$data['hardwareData'] 	= $this->Hardwares_model->getHardware();		
+		}else{			
+			$data['hardwareData'] 	= $this->Hardwares_model->getStatusFilter($status);			
+		}
+		//$data['hardwareData'] 	= $this->Hardwares_model->getHardware();
+		$this->load->view('header',$data);
+		$this->load->view('hardwares/index',$data);
+		$this->load->view('footer',$data);
+	}
+	public function mapHardware(){
+		$data['title'] 			= 'Assign Hardware To Section';
+		$data['hardwareData'] 	= $this->Hardwares_model->getHardware();
+		$this->load->view('header',$data);
+		$this->load->view('hardwares/map_hardware',$data);
+		$this->load->view('footer',$data);
+	}
+	public function addHardware(){
+		$data['title']  = 'Add Hardware';
+		$session_data 	= $this->session->userdata('loggedInUserDetail');
+		$zone_id 		= $session_data->user_zone;
+		$division_id 	= $session_data->user_division; 
+		$data['hardware_category'] 	= $this->Categories_model->getCategory($zone_id,$division_id);
+		$data['catList'] 		= $this->Categories_model->getAllCategory();
+		$data['typeList'] 		= $this->Types_model->getType();
+		$data['mshopList'] 		= $this->Maintenance_shops_model->getMShopCount($zone_id,$division_id);
+		$data['msectionList'] 	= $this->Maintenance_sections_model->getMSection();
+		if($this->input->post('submit')){
+			$arr = array();
+			$arr['hardware_category'] 	= $this->input->post('hardware_category');
+			$arr['hardware_type'] 		= $this->input->post('hardware_type');
+			$arr['hardware_code'] 		= $this->input->post('hardware_code');
+			$arr['hardware_name'] 		= $this->input->post('hardware_name');
+			$arr['hardware_model'] 		= $this->input->post('hardware_model');
+			$arr['hardware_company'] 	= $this->input->post('hardware_company');
+			$arr['default_maintenance_shop'] 	= $this->input->post('maintenance_shop');
+			$arr['default_maintenance_section'] = $this->input->post('maintenance_section');
+			$arr['schedule_frequency_count'] = $this->input->post('schedule_frequency_count');
+			$arr['schedule_frequency_cycle'] = $this->input->post('schedule_frequency_cycle');
+			$arr['hardware_status'] 		= '10';
+			$arr['hardware_created_date'] 	= date('Y-m-d');
+			$arr['hardware_created_by'] 	= $this->session->userdata('loggedInAdmin');
+			$hardware_image 	= time().'-'.$_FILES["hardware_image"]['name'];
+			$config 			= array(
+									'upload_path' 	=> "./uploads/hardware/",
+									'allowed_types' => "jpg|png|jpeg",
+									'overwrite' 	=> TRUE,
+									'max_size'		=> "100",
+									'file_name' 	=> $hardware_image
+								);
+			$this->load->library('upload', $config); 
+			$uploadedData 			= [];
+			if($this->upload->do_upload('hardware_image'))
+			{
+				$upload_data 	= array('upload_data' => $this->upload->data());
+				$uploadedData	= $upload_data['upload_data'];
+			}
+			else
+			{
+				$error = array('error' => $this->upload->display_errors());
+				$data['img_error'] = $error['error'];
+				$this->load->view('header',$data);
+				$this->load->view('hardwares/add_hardware',$data);
+				$this->load->view('footer',$data);
+			}
+			if(!empty($uploadedData['file_name'])){
+				$arr['hardware_image'] = $uploadedData['file_name'];
+			}
+			$this->form_validation->set_rules('hardware_code','Hardware Code','is_unique[hardware_basic_tbl.hardware_code]');
+			if($this->form_validation->run()){
+				$table 		= 'hardware_basic_tbl';
+				$response 	= $this->Hardwares_model->insertHardware($table,$arr);
+				if($response){
+					$this->session->set_flashdata('hardwareSuccess', 'Hardware Added successfully');
+					redirect('hardwares');
+				}else{
+					$this->session->set_flashdata('hardwareError', 'Error! Hardware not added.');
+					redirect('hardwares/addHardware');
+				}
+			}
+		}             
+		$this->load->view('header',$data);
+		$this->load->view('hardwares/add_hardware',$data);
+		$this->load->view('footer',$data);
+	}
+	public function assignShop($id){
+		$data['title']  		= 'Assign shop and section to hardware.';
+		$data['hBasicDetails'] 	= $this->Hardwares_model->getHardwareBasicDetailById($id);
+		$data['hardwareId'] 	= $id;
+		$data['sectionList'] 	= $this->Sections_model->getSection();
+		$data['shopList'] 		= $this->Shops_model->getShop();
+		$loggedInAdminId		= $this->session->userdata('loggedInAdmin');
+		if($this->input->post('submit') || $this->input->post('add_more')){
+			$arr 							= [];
+			$arr['hardware_id'] 			= $id;
+			$arr['hardware_serial_no'] 		= $this->input->post('hardware_serial_no');
+			$arr['shop_id'] 				= $this->input->post('shop_id');
+			$arr['section_id'] 				= $this->input->post('section_id');
+			$arr['map_status'] 				= '10';
+			$arr['map_created_date'] 		= date('Y-m-d');
+			$arr['mapping_created_by'] 		= $loggedInAdminId;
+			$this->form_validation->set_rules('hardware_serial_no','Hardware Serial Numaber','is_unique[hardware_mapping_section_tbl.hardware_serial_no]');
+			if($this->form_validation->run()){
+				$table 		= 'hardware_mapping_section_tbl';
+				$response 	= $this->Hardwares_model->insertHardware($table,$arr);
+				if($response){
+					$scheduleArray 							= [];
+					$scheduleArray['map_id'] 				= $response;
+					$service_date                			= date_create($this->input->post('service_date'));
+					$scheduleArray['schedule_start_date'] 	= date_format($service_date,"Y-m-d");
+					$schedule_start_date 					= $scheduleArray['schedule_start_date'];
+					$hBasicDetails 							= $data['hBasicDetails'];
+					$nextScheduleDate						= '';
+					if(!empty($hBasicDetails)){
+						$schedule_frequency_count			= $hBasicDetails->schedule_frequency_count;
+						$schedule_frequency_cycle			= $hBasicDetails->schedule_frequency_cycle;
+						$nextScheduleDate					= $this->nextScheduleDate($schedule_frequency_count,$schedule_frequency_cycle,$schedule_start_date);
+					}
+					$scheduleArray['next_schedule_date'] 	= $nextScheduleDate;
+					$scheduleArray['schedule_status'] 		= '10';
+					$scheduleArray['schedule_created_date'] = date('Y-m-d');
+					$scheduleArray['schedule_created_by']	= $loggedInAdminId;
+					$schedule_table 			= 'hardware_schedule_config_tbl';
+					$schedule_response 			= $this->Hardwares_model->insertHardware($schedule_table,$scheduleArray);
+					if($schedule_response){
+						$this->session->set_flashdata('hardwareSuccess', 'Hardware mapped successfully');
+						if($this->input->post('add_more') === 'Add More'){
+							redirect('hardwares/assignShop/'.$id);
+						}else{
+							redirect('hardwares');							
+						}
+					}else{
+						$this->session->set_flashdata('hardwareError', 'Error! Hardware not added.');
+						redirect('hardwares/assign_shop/'.$id);
+					}
+				}else{
+					$this->session->set_flashdata('hardwareError', 'Error! Hardware not added.');
+					redirect('hardwares/assign_shop/'.$id);
+				}
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('hardwares/assign_shop',$data);
+				$this->load->view('footer',$data);
+			}
+		}else{
+			$this->load->view('header',$data);
+			$this->load->view('hardwares/assign_shop',$data);
+			$this->load->view('footer',$data);
+		}
+	}
+	public function getSectionByShop()
+	{
+		$postData 		= $this->input->post();
+		$shopId 		= $postData['shop_id'];
+		$sections 		= $this->Users_model->getShopSection($shopId);
+		$html = "";
+        foreach($sections as $res){
+            $html .= '<option value="'.$res->section_id.'">'.$res->section_name.'</option>'; 
+        }
+		print_r($html);
+	}
+	public function editHardware($id)
+	{
+		$data['title'] 			= 'Edit Hardware';
+		$hardwareData 			= $this->Hardwares_model->getHardwareBasicDetailById($id);
+		$data['sectionList'] 	= $this->Sections_model->getSection();
+		$data['shopList'] 		= $this->Shops_model->getShop();
+		$session_data 			= $this->session->userdata('loggedInUserDetail');
+		$zone_id 				= $session_data->user_zone;
+		$division_id 			= $session_data->user_division; 
+		$data['mshopList'] 		= $this->Maintenance_shops_model->getMShopCount($zone_id,$division_id);
+		if(!empty($hardwareData)){
+			$data['hardwareDataById'] 	= $hardwareData;
+			$data['catList'] 			= $this->Categories_model->getCategory();
+			$data['typeList'] 			= $this->Types_model->getType();
+			$data['editedId'] 			= $id;
+			if($this->input->post('update')){
+				$hardwareDataById 	= $data['hardwareDataById'];
+				$hardware_code		= $hardwareDataById->hardware_code;
+				if($hardware_code != $this->input->post('hardware_code')){
+					$this->form_validation->set_rules('hardware_code','Hardware Numaber','is_unique[hardware_basic_tbl.hardware_code]');
+				}else{
+					$this->form_validation->set_rules('hardware_code','Hardware Numaber','required');
+				}
+				if($this->form_validation->run()){
+					$postData = $this->input->post();
+					$arr = array();
+					$arr['hardware_category'] 			= $postData['hardware_category'];
+					$arr['hardware_type'] 				= $postData['hardware_type'];
+					$arr['hardware_code'] 				= $postData['hardware_code'];
+					$arr['hardware_name'] 				= $postData['hardware_name'];
+					$arr['hardware_model'] 				= $postData['hardware_model'];
+					$arr['hardware_company'] 			= $postData['hardware_company'];
+					$arr['default_maintenance_shop'] 	= $postData['maintenance_shop'];
+					$arr['default_maintenance_section'] = $postData['maintenance_section'];
+					$arr['schedule_frequency_count'] 	= $postData['schedule_frequency_count'];
+					$arr['schedule_frequency_cycle'] 	= $postData['schedule_frequency_cycle'];
+					$arr['hardware_updated_date'] 		= date('Y-m-d');
+					$arr['hardware_updated_by'] 		= $this->session->userdata('loggedInAdmin');
+					$hardware_image 	= time().'-'.$_FILES["hardware_image"]['name'];
+					$config 			= array(
+												'upload_path' 	=> "./uploads/hardware/",
+												'allowed_types' => "jpg|png|jpeg",
+												'overwrite' 	=> TRUE,
+												'max_size'		=> "100",
+												'file_name' 	=> $hardware_image
+										);
+					$this->load->library('upload', $config); 
+					$uploadedData 			= [];
+					if($this->upload->do_upload('hardware_image'))
+					{
+						$upload_data 	= array('upload_data' => $this->upload->data());
+						$uploadedData	= $upload_data['upload_data'];
+					}else{
+						$uploadedData['file_name']	= $hardwareDataById->hardware_image;
+					}
+					if(!empty($uploadedData['file_name'])){
+						$arr['hardware_image'] = $uploadedData['file_name'];
+					}
+					$table = 'hardware_basic_tbl';
+					//echo "<pre>";print_r($arr);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+					$response = $this->Hardwares_model->updateHardware($id,$arr,$table);
+					if($response){
+						$this->session->set_flashdata('hardwareSuccess', 'Hardware Updated successfully');
+						redirect('hardwares');
+					}else{
+						$this->session->set_flashdata('hardwareError', 'Error! Hardware not updated.');
+						redirect('hardwares/editHardware/'.$id);
+					}
+				}else{
+					$this->load->view('header',$data);
+					$this->load->view('hardwares/edit_hardware',$data);
+					$this->load->view('footer',$data);
+				}
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('hardwares/edit_hardware',$data);
+				$this->load->view('footer',$data);
+			}
+		}else{
+			redirect('hardwares');
+		}
+	}
+	
+	public function editHardwareMap($id)
+	{
+		$data['title']  			= 'Edit hardware mapping';		
+		$hwMapDetails 				= $this->Hardwares_model->getHardwareMapDataById($id);
+		$hardware_id 				= $hwMapDetails->hardware_id;
+		$hBasicDetails 				= $this->Hardwares_model->getHardwareBasicDetailById($hardware_id);
+		$data['mapId'] 				= $id;
+		$data['sectionList'] 		= $this->Sections_model->getSection();
+		$data['shopList'] 			= $this->Shops_model->getShop();
+		$loggedInAdminId			= $this->session->userdata('loggedInAdmin');
+		if(!empty($hBasicDetails)){
+			$data['hBasicDetails'] 	= $hBasicDetails;
+			$data['hwMapDetails'] 	= $hwMapDetails;
+			$data['editedId'] 		= $id;
+			if($this->input->post('update')){
+				$hardwareDataById 	= $data['hBasicDetails'];
+				$hardware_code	= $hardwareDataById->hardware_code;
+				if($hardware_code != $this->input->post('hardware_code')){
+					$this->form_validation->set_rules('hardware_code','Hardware Numaber','is_unique[hardware_basic_tbl.hardware_code]');
+				}else{
+					$this->form_validation->set_rules('hardware_code','Hardware Numaber','required');
+				}
+				if($this->form_validation->run()){
+					$postData = $this->input->post();
+					unset($postData['update']);
+					$schedule_date 						= date_create($postData['service_date']);
+					$schedule_date 						= date_format($schedule_date,"Y-m-d");
+					$postData['schedule_start_date'] 	= $schedule_date;
+					$schedule_count 					= $hBasicDetails->schedule_frequency_count;
+					$schedule_cycle 					= $hBasicDetails->schedule_frequency_cycle;
+					$schedule_next_date 				= $this->nextScheduleDate($schedule_count,$schedule_cycle,$postData['schedule_start_date'] );
+					$postData['next_schedule_date'] 	= $schedule_next_date;
+					$updateMapHardware					= [];
+					$updateMapHardware					= array(
+															'hardware_serial_no' 	=> $postData['hardware_serial_no'],
+															'shop_id' 				=> $postData['shop_id'],
+															'section_id' 			=> $postData['section_id']
+															);
+					$table 		= 'hardware_mapping_section_tbl';
+					$response 	= $this->Hardwares_model->updateMapHardware($updateMapHardware,$id,$table);
+					if(isset($response)){
+						$updateScheduleHardware			= array(
+							'schedule_start_date' 	=> $postData['schedule_start_date'],
+							'next_schedule_date' 	=> $postData['next_schedule_date'],
+						);
+						$table 				= 'hardware_schedule_config_tbl';
+						$scheduleResponse 	= $this->Hardwares_model->updateMapHardware($updateScheduleHardware,$id,$table);
+						if(isset($scheduleResponse)){
+							$this->session->set_flashdata('hardwareSuccess', 'Hardware update successfully');
+							redirect('hardwares/viewHardware/'.$hardware_id);
+						}else{
+							$this->session->set_flashdata('hardwareError', 'Error! Hardware not updated.');
+							redirect('hardwares/editHardwareMap/'.$id);
+						}
+					}else{
+						$this->session->set_flashdata('hardwareError', 'Error! Hardware not updated.');
+						redirect('hardwares/editHardwareMap/'.$id);
+					}
+				}else{
+					$this->load->view('header',$data);
+					$this->load->view('hardwares/edit_hardware_map',$data);
+					$this->load->view('footer',$data);
+				}
+			}else{
+				$this->load->view('header',$data);
+				$this->load->view('hardwares/edit_hardware_map',$data);
+				$this->load->view('footer',$data);
+			}
+		}else{
+			redirect('hardwares');
+		}
+	}
+	public function viewHardware($id)
+	{
+		$data['title'] 		= 'View Hardware';
+		$hardwareData 		= $this->Hardwares_model->getHardwareBasicDetailById($id);
+		//$maintenanceLogData	= $this->Hardwares_model->getMaintenanceLog($id);
+		if(!empty($hardwareData)){
+			$data['hardwareDataById'] 	= $hardwareData;
+			/* if(!empty($maintenanceLogData)){
+				$this->load->model('Users_model');
+				$data['maintenanceLogData'] = $maintenanceLogData;
+			} */
+			$data['editedId'] 			= $id;
+			$this->load->view('header',$data);
+			$this->load->view('hardwares/view_hardware',$data);
+			$this->load->view('footer',$data);
+		}else{
+			redirect('hardwares');
+		}
+	}
+	public function nextScheduleDate($schedule_count,$schedule_cycle,$schedule_date)
+	{
+		switch($schedule_cycle){
+			case 'D':
+			$schedule_cycle = 'day';
+			break;
+			case 'W':
+			$schedule_cycle = 'week';
+			break;
+			case 'M':
+			$schedule_cycle = 'month';
+			break;
+			case 'Y':
+			$schedule_cycle = 'year';
+			break;
+		}
+		$nextScheduleDate = date("Y-m-d", strtotime(date("Y-m-d", strtotime($schedule_date)) . " + ".$schedule_count." ".$schedule_cycle));
+		return $nextScheduleDate;
+	}
+	/* public function deleteHardware($id)
+	{
+		$data['title'] 		= 'Delete Hardware';
+		$postData['id']		= $id; 
+		$deletedStatus 		= $this->Hardwares_model->deleteHardware($postData);
+	} */
+	
+	public function getmSectionByMshop()
+	{
+		$shopId 		= $this->input->post('shop_id');
+		$html = "";
+		$sections 		= $this->Maintenance_sections_model->getMSectionByMshopId($shopId);
+		//echo "<pre>";print_r($sections);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+		if(!empty($sections)){
+			foreach($sections as $res){
+				$html .= '<option value="'.$res->maintenance_section_id.'">'.$res->maintenance_section_name.'</option>'; 
+			}
+		}else{
+			$html .= '<option value=" ">No Section Mapped.</option>'; 
+		}
+		print_r($html);
+	}
+	
+}

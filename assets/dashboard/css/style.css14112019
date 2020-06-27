@@ -1,0 +1,76 @@
+.bottom-buffer {
+    margin-bottom: 18px;
+}
+.my-5 {
+    margin: 3rem 0;
+}
+.fa-pencil-square-o {
+    color: #fff;
+    background: #26b99a;
+    font-size: 20px;
+    padding: 5px;
+}
+.fa-trash-o {
+    color: #fff;
+    background: #b93426;
+    font-size: 20px;
+    padding: 5px;
+}
+.fa-eye{
+	color: #000;
+    font-size: 20px;
+    padding: 5px;
+}
+.error {
+    color: #b93426;
+}
+.btn-primary.active, .btn-primary:active, .open>.dropdown-toggle.btn-primary,.btn-default.active, .btn-default:active, .open>.dropdown-toggle.btn-default{
+	color: #fff !important;    
+	background-color: #169f85 !important;    
+	background-image: none !important;    
+	border-color: #adadad !important;
+}
+#user-view-form .control-label,#hardware-view-form .control-label{
+	text-align:left !important;
+}
+.add-new,.edit-btn{
+	color:#fff !important;
+}
+.add-new:hover{
+	background-color:#337ab7 !important;
+}
+.edit-btn:hover{
+	background-color:#26b99a !important;	
+}
+.btn-group{
+	position:absolute !important;
+}
+.user-details{
+	margin-left: 10px;
+}
+.dashboard a{
+	color:#fff;
+}
+.tile-stats h3 {
+    width: 75%;
+}
+.view,.edit,.inactive,.view:hover,.edit:hover,.inactive:hover{
+    color: #fff;
+    padding: 5px;
+    border-radius: 3px;
+}
+.view {
+    background: #337ab7;
+}
+.edit {
+    background: #26b99a;
+}
+.inactive {
+    background: #b93426;
+}
+.action a {
+    margin: 0px 1px;
+}
+.mt-5{
+	margin-top:3rem !important;
+}

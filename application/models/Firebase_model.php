@@ -1,0 +1,75 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+define('FIREBASE_API_KEY', 'AAAAdK3H1Us:APA91bGRCQXbIxztT0zUVD1mkOkJO8NcL3wOVrkXHoW5Z_CZSFKAbqCuznniu83H80iXDp8T9sUdHn7hg3SNPGP3cQdXMj-g1PchQ3KaCADyEIiq4ugW5BTtr-HtoDAqmMFSCHvCYysI');
+Class Firebase_model extends CI_Model{
+	// sending push message to single user by firebase reg id
+    public function send($to, $message) {
+        $fields = array(
+            'to' => $to,
+            'data' => $message,
+        );
+        return $this->sendPushNotification($fields);
+    }
+ 
+    // Sending message to a topic by topic name
+    public function sendToTopic($to, $message) {
+        $fields = array(
+            'to' => '/topics/' . $to,
+            'data' => $message,
+        );
+        return $this->sendPushNotification($fields);
+    }
+ 
+    // sending push message to multiple users by firebase registration ids
+    public function sendMultiple($registration_ids, $message) {
+        $fields = array(
+            'registration_ids' 	=> $registration_ids,
+            'data' 				=> $message,
+            'notification' 		=> $message,
+        );
+ 
+        return $this->sendPushNotification($fields);
+    }
+ 
+    // function makes curl request to firebase servers
+    private function sendPushNotification($fields) {
+         
+        //require_once __DIR__ . '/config.php';
+ 
+        // Set POST variables
+        $url = 'https://fcm.googleapis.com/fcm/send';
+ 
+        $headers = array(
+            'Authorization: key=' . FIREBASE_API_KEY,
+            'Content-Type: application/json'
+        );
+        // Open connection
+        $ch = curl_init();
+ 
+        // Set the url, number of POST vars, POST data
+        curl_setopt($ch, CURLOPT_URL, $url);
+ 
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+ 
+        // Disabling SSL Certificate support temporarly
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+ 
+        
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+ 
+        // Execute post
+        $result = curl_exec($ch);
+        
+        if ($result === FALSE) {
+            die('Curl failed: ' . curl_error($ch));
+        }
+ 
+        // Close connection
+        curl_close($ch);
+ 
+        return $result;
+    }
+
+}

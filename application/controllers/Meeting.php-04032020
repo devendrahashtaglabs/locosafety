@@ -1,0 +1,281 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+class Meeting extends CI_Controller {
+	public function __construct()
+	{
+		parent::__construct();
+		$this->load->database();
+		$this->load->helper(array('form', 'url'));
+		$this->load->library('form_validation');
+		$this->load->library('session');
+		$this->load->model('Categories_model');
+		$this->load->model('Users_model');
+		$this->load->model('Meeting_model');		
+		$this->load->model('Shops_model');
+		$this->load->model('Notifications_model');
+		$this->load->model('Maintenance_shops_model');
+		$this->load->model('Maintenance_sections_model');
+		$loggedInAdmin 		= $this->session->userdata('loggedInAdmin');
+		$loggedInUserDetail = $this->session->userdata('loggedInUserDetail');
+		$user_role 			= $loggedInUserDetail->user_role;
+		if(empty($loggedInAdmin) || $user_role == '1'){
+			redirect('login');
+		} 
+	}
+	public function index()
+	{
+		$data['meetingData'] = $this->Meeting_model->GetAllMeeting();
+		$data['title'] 		= 'Safety Meeting';
+		$this->load->view('header',$data);
+		$this->load->view('meeting/index',$data);
+		$this->load->view('footer',$data);
+	}
+	
+	public function add(){
+		$data['title'] 		= 'Add Meeting';
+		$loggedInUserDetail = $this->session->userdata('loggedInUserDetail');
+		$zone_id = $loggedInUserDetail->user_zone;
+		$division_id = $loggedInUserDetail->user_division;
+		$data['Shops'] = $this->Shops_model->getShopActive($zone_id,$division_id,10);
+		$data['M_Shops'] = $this->Maintenance_shops_model->getActiveMShop($zone_id,$division_id);
+		$this->load->view('header',$data);
+		$this->load->view('meeting/add',$data);
+		$this->load->view('footer',$data);
+	}
+	public function addAction(){
+		
+		$loggedInUserDetail = $this->session->userdata('loggedInUserDetail');
+		$zone_id = $loggedInUserDetail->user_zone;
+		$division_id = $loggedInUserDetail->user_division;
+		if($this->input->post('submit')){
+			$arrData = array(
+				'title'					=>		htmlentities($this->input->post('title')),
+				'description'			=>		htmlentities($this->input->post('description')),
+				'shop_id'				=>		$this->input->post('ShopID'),
+				'section_id'			=>		$this->input->post('Section'),
+				'm_shop_id'				=>		$this->input->post('M_ShopID'),
+				'm_section_id'			=>		$this->input->post('M_SectionID'),
+				'user_ids'				=>		implode(',',$this->input->post('userlist')),
+				'meeting_date'			=>		date('Y-m-d',strtotime($this->input->post('date'))),
+				'meeting_in_time'		=>		date('H:i:s',strtotime($this->input->post('intime'))),
+				'meeting_out_time'		=>		date('H:i:s',strtotime($this->input->post('outtime'))),
+				'zone'					=>		$zone_id,
+				'division'				=>		$division_id,
+				'status'				=>		10,
+				'created_by'			=>		$loggedInUserDetail->user_info_id,
+				'created'				=>		date('Y-m-d H:i:s'),
+				'modified'				=>		date('Y-m-d H:i:s'),
+			);
+				
+			$response =  $this->Meeting_model->insertMeeting($arrData);
+			
+			if($response){
+				$this->session->set_flashdata('Success', 'Safety Meeting Added successfully');
+				redirect('meeting');
+			}else{
+				$this->session->set_flashdata('Error', 'Error! Safety Meeting not added.');
+				redirect('meeting');
+			}
+			
+		}
+		
+	}
+	
+	public function agenda( $MapDate , $mapID){
+		
+		if($MapDate != '' && $mapID != ''){
+			$data['title'] 		= 'Add Meeting';			
+			$data['MapDate'] = $MapDate;
+			$data['mapID'] = $mapID;			
+			$data['users'] = $this->Users_model->GetAllUserForAgenda();
+			$this->load->view('header',$data);
+			$this->load->view('meeting/add_agenda',$data);
+			$this->load->view('footer',$data);		
+		}else{
+			redirect('meeting');
+		}
+		
+	}
+	
+	public function addAgenda(){
+		
+		
+		$loggedInUserDetail = $this->session->userdata('loggedInUserDetail');
+		$title = $_POST['title'];
+		$description = $_POST['description'];
+		$users = implode(',',$_POST['users']);
+		
+		//$i = 0;
+		//foreach($users as $row){			
+			$insertData = array(
+				'title'				=>		$title,
+				'description'		=>		$description,
+				'user_ids'			=>		$users,
+				'meeting_id'		=>		$this->input->post('meeting_id'),
+				'start_time'		=>		$this->input->post('intime'),
+				'end_time'			=>		$this->input->post('outtime'),
+				'start_date'		=>		date('Y-m-d',strtotime($this->input->post('startdate'))),
+				'end_date'			=>		date('Y-m-d',strtotime($this->input->post('enddate'))),
+				'status'			=>		10,
+				'created'			=>		date('Y-m-d H:i:s'),
+				'modified'			=>		date('Y-m-d H:i:s'),
+				'created_by'		=>		$loggedInUserDetail->user_info_id,
+			);		
+		$response =  $this->Meeting_model->insertAgend($insertData);			
+			//$i++;
+		//}
+			
+		$MapDate =  $_POST['MapDate'];
+		$mapID =  $_POST['mapID'];
+			
+		if($response){
+			$this->session->set_flashdata('Success', 'Agenda Added successfully');
+			if($_POST['addmore'] == "Add More"){
+				redirect('meeting/agenda/'.$MapDate.'/'.$mapID);
+			}else{
+				redirect('meeting');
+			}
+		}else{
+			$this->session->set_flashdata('Error', 'Error! Safety Agenda not added.');
+			redirect('meeting');
+		}
+		
+	}
+	
+	public function checkmapid(){
+		
+		$map_id = $_POST['map_id'];
+		$response = $data['MapData'] =   $this->Meeting_model->CheckMapid($map_id);	
+		if(count($response) > 0){
+			$this->load->view('meeting/ajaxlist',$data);
+		}else{
+			echo 0;
+		}
+	}
+	
+	public function getuserbyshop($ShopID,$SectionID=NULL)
+	{
+		$data['title']			= '';
+		$shop_id 				= $ShopID;
+		$UserList 				= '';
+		$SectionList 			= '';
+		
+		if(!empty($shop_id)){
+			$allUserData = $this->Meeting_model->getUserByShopId($shop_id);
+			if($SectionID != ''){				
+				$allUserData = $this->Meeting_model->getUserByShopIdAndSectionID($shop_id,$SectionID);				
+			}
+			
+			if(!empty($allUserData)){
+				
+				foreach($allUserData as $singleUserData){
+					$name = ''; 
+					if(isset($singleUserData->user_f_name) || isset($singleUserData->user_l_name)){
+						$name = $singleUserData->user_f_name .' ' . $singleUserData->user_l_name;
+					}
+					$UserList .= '<option value="'.$singleUserData->user_info_id.'" selected="selected" >'.$name.'</option>';
+				}
+			}else{
+				$UserList .= '<option value="">No User Mapped </option>';
+			}
+			if($SectionID == ''){
+				$allSectionData = $this->Sections_model->getSectionByShopID($shop_id);
+				$SectionList .= '<option value="">-All-</option>';
+				if(!empty($allSectionData)){
+					foreach($allSectionData as $Section){
+						$SectionList .= '<option value="'.$Section->section_id.'">'.$Section->section_name.'</option>';
+					}
+				}else{
+					$SectionList .= '<option value="">No section found. </option>';
+				}
+			}else{
+				$SectionID = '';
+			}
+			
+		}else{
+			$UserList .= '<option value="">No User Mapped. </option>';
+		}
+		
+		$res['UserList'] 	=  $UserList;
+		$res['SectionList'] =  $SectionList;
+		
+		print_r(json_encode($res));
+	}	
+	public function getMuserbyshop($ShopID,$SectionID=NULL)
+	{
+		$data['title']			= '';
+		$shop_id 				= $ShopID;
+		$UserList 				= '';
+		$SectionList 			= '';
+		
+		if(!empty($shop_id)){
+			$allUserData = $this->Meeting_model->getUserByMShopId($shop_id);
+			
+			if($SectionID != ''){				
+				$allUserData = $this->Meeting_model->getUserByMShopIdAndSectionID($shop_id,$SectionID);		
+						
+			}
+			
+			if(!empty($allUserData)){
+				//$UserList .= '<option value="">-All-</option>';
+				foreach($allUserData as $singleUserData){
+					$name = ''; 
+					if(isset($singleUserData->user_f_name) || isset($singleUserData->user_l_name)){
+						$name = $singleUserData->user_f_name .' ' . $singleUserData->user_l_name;
+					}
+					$UserList .= '<option value="'.$singleUserData->user_info_id.'" selected="selected">'.$name.'</option>';
+				}
+			}else{
+				$UserList .= '<option value="">No User Mapped </option>';
+			}
+			if($SectionID == ''){
+				$allSectionData = $this->Maintenance_sections_model->getMSectionByMshopId($shop_id);
+						
+				if(!empty($allSectionData)){
+					$SectionList .= '<option value="">-All-</option>';
+					foreach($allSectionData as $Section){
+						$SectionList .= '<option value="'.$Section->maintenance_section_id.'">'.$Section->maintenance_section_name.'</option>';
+					}
+				}else{
+					$SectionList .= '<option value="">No section found. </option>';
+				}
+			}else{
+				$SectionID = '';
+			}
+			
+		}else{
+			$UserList .= '<option value="">No User Mapped. </option>';
+		}
+		
+		$res['UserList'] 	=  $UserList;
+		$res['SectionList'] =  $SectionList;
+		print_r(json_encode($res));
+		exit;
+		
+	}
+	
+	function getuserbyusertype($type){
+		$UserList = '';
+		$allUserData = $this->Meeting_model->GetAllUserByType($type);
+		
+		if(!empty($allUserData)){
+			//$UserList .= '<option value="">-All-</option>';
+			foreach($allUserData as $singleUserData){
+				$name = ''; 
+				if(isset($singleUserData->user_f_name) || isset($singleUserData->user_l_name)){
+					$name = $singleUserData->user_f_name .' ' . $singleUserData->user_l_name;
+				}
+				$UserList .= '<option value="'.$singleUserData->user_info_id.'" selected="selected" >'.$name.'</option>';
+			}
+		}else{
+			$UserList .= '<option value="">No User Mapped </option>';
+		}
+		$res['UserList'] 	= $UserList;
+		print_r(json_encode($res));
+		exit;
+		
+	}
+	
+	
+	
+}

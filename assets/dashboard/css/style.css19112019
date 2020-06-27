@@ -1,0 +1,111 @@
+.bottom-buffer {
+    margin-bottom: 18px;
+}
+.my-5 {
+    margin: 3rem 0;
+}
+.fa-pencil-square-o {
+    color: #fff;
+    background: #26b99a;
+    font-size: 20px;
+    padding: 5px;
+}
+.fa-trash-o {
+    color: #fff;
+    background: #b93426;
+    font-size: 20px;
+    padding: 5px;
+}
+.fa-eye{
+	color: #000;
+    font-size: 20px;
+    padding: 5px;
+}
+.error {
+    color: #b93426;
+}
+.btn-primary.active, .btn-primary:active, .open>.dropdown-toggle.btn-primary,.btn-default.active, .btn-default:active, .open>.dropdown-toggle.btn-default{
+	color: #fff !important;    
+	background-color: #169f85 !important;    
+	background-image: none !important;    
+	border-color: #adadad !important;
+}
+#hardwaredatatable_wrapper .btn-default {
+    border-color: #ccc !important;
+}
+#user-view-form .control-label,#hardware-view-form .control-label{
+	text-align:left !important;
+}
+.add-new,.edit-btn{
+	color:#fff !important;
+}
+.add-new:hover{
+	background-color:#337ab7 !important;
+}
+.edit-btn:hover{
+	background-color:#26b99a !important;	
+}
+.btn-group{
+	position:absolute !important;
+}
+.user-details{
+	margin-left: 10px;
+}
+.dashboard a{
+	color:#fff;
+}
+.tile-stats h3 {
+    width: 75%;
+}
+.view,.edit,.inactive,.view:hover,.edit:hover,.inactive:hover,.add-btn,.add-btn:hover{
+    color: #fff;
+    padding: 5px;
+    border-radius: 3px;
+}
+.view {
+    background: #337ab7;
+}
+.edit {
+    background: #26b99a;
+}
+.inactive {
+    background: #b93426;
+}
+.action a {
+    margin: 0px 1px;
+}
+.mt-5{
+	margin-top:3rem !important;
+}
+.dashboard_icon{
+	width: 20%;
+}
+.dashboard_icon .tile-stats h3 {
+    font-size: 20px;
+    min-height: 44px;
+}
+.add-btn{
+	background: #337ab7;
+}
+.division-action a {
+    float: left;
+    margin-bottom: 2px;
+    width: 100%;
+    text-align: center;
+}
+#g-recaptcha-response {
+    display: block !important;
+    position: absolute;
+    margin: -78px 0 0 0 !important;
+    width: 302px !important;
+    height: 76px !important;
+    z-index: -999999;
+    opacity: 0;
+}
+#choose_hardware {
+    padding: 10px;
+	width: 40%;
+}
+.modal-content {
+    min-height: 90vh;
+}

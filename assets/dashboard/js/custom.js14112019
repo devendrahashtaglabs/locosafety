@@ -1,0 +1,327 @@
+$(function() {
+	$( "#user_dob" ).datepicker({ dateFormat: 'd M yy' });
+	$( "#hardware_mfg_date" ).datepicker({ dateFormat: 'd M yy' });
+	$( "#hardware_exp_date" ).datepicker({ dateFormat: 'd M yy' });
+	$( "#service_date" ).datepicker({ dateFormat: 'd M yy' });
+    $( "#to-date" ).datepicker({ dateFormat: 'd M yy' });
+    $( "#from-date" ).datepicker({ dateFormat: 'd M yy' });
+ });
+$(document).ready(function() {
+	$("#user-form").validate({
+		rules: {
+			user_f_name: "required",
+			user_l_name: "required",
+			user_division: "required",
+			user_zone: "required",
+			shop_id: "required",
+			user_type: "required",
+			section_id: "required",
+			user_email: "required",
+			user_pin: {
+							required : true,
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+					    },
+			user_cpin: {
+							required : true,
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+					    },
+			user_pass: {
+							required : true,
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+					    },
+			user_cpass: {
+							required : true,
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+							equality: "user_pass"
+					    },
+			user_phone: {
+							required : true,
+							minlength : 10,
+							maxlength : 10,
+							number : true,
+					    },
+			user_zipcode: {
+							minlength : 6,
+							maxlength : 6,
+							number : true,
+						},
+		}
+	});
+	$("#zone-form").validate({
+		rules: {
+			zone_code: "required",
+			zone_name: "required",
+		}
+	});
+	$("#type-form").validate({
+		rules: {
+			type_code: "required",
+			type_name: "required",
+		}
+	});
+	$("#category-form").validate({
+		rules: {
+			category_code: "required",
+			category_name: "required",
+		}
+	});
+	$("#division-form").validate({
+		rules: {
+			division_code: "required",
+			division_name: "required",
+		}
+	});
+	$("#hardware-form").validate({
+		rules: {
+			hardware_number: "required",
+			hardware_name: "required",
+			service_frequency_count: "required",
+			service_frequency_cycle: "required",
+			service_date: "required",
+		}
+	});
+	$("#shop-form").validate({
+		rules: {
+			shop_name: "required",
+		}
+	});
+	$("#section-form").validate({
+		rules: {
+			section_name: "required",
+		}
+	});
+});
+function readURL(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();
+    
+    reader.onload = function(e) {
+      $('#profile_pic').attr('src', e.target.result);
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+$("#user_profile_pic").change(function() {
+  readURL(this);
+});
+function hardwareImage(input) {
+  if (input.files && input.files[0]) {
+    var reader = new FileReader();    
+    reader.onload = function(e) {
+      $('#hardware_pic').attr('src', e.target.result);
+    }
+    
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+$("#hardware_image").change(function() {
+  hardwareImage(this);
+});
+function doconfirm()
+{
+    job=confirm("Are you sure to delete this item?");
+    if(job!=true)
+    {
+        return false;
+    }
+}
+$(function(){
+   $("#user_type").on('change',function(){
+		var user_type = $(this).val(); 
+		if(user_type == 'ShI'){
+			$('#section_id').attr("disabled", true); 
+		}else if(user_type == 'MG'){
+			$('#section_id').attr("disabled", true);  
+			$('#shop_id').attr("disabled", true); 
+		}else{
+			$('#section_id').removeAttr("disabled");  
+			$('#shop_id').removeAttr("disabled");
+		}
+		console.log(user_type);return false;
+   });
+}); 
+
+$(function(){
+	$('#hardwaredatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#userdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#categorydatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#typedatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#divisiondatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#zonedatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#shopdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#sectiondatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#ticketdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){
+	$('#maintenancelogdatatable').DataTable({				
+		dom: 'Bfrtip',
+		buttons: [{
+			extend: 'csv',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		},{
+			extend: 'excel',
+			exportOptions: {
+				columns: [0,1,2,3]
+			}
+		}],
+		responsive: false
+	});
+});
+$(function(){ 
+	$('#searchByStatus').on('change', function() {
+	$( "#statusChnage" ).submit();
+   });
+}); 

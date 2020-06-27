@@ -1,0 +1,67 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+Class Hardwares_model extends CI_Model{
+    
+    public function __construct() {
+        parent::__construct();
+        $this->load->database();
+    }
+    
+    public function insertHardware($table,$data){
+        $this->db->insert($table,$data);
+		$insertedId = $this->db->insert_id();
+        return $insertedId;
+    }
+	public function getHardware(){
+		$this->db->select('*');
+		$this->db->from('hardware_basic_tbl');
+		$this->db->where('hardware_status', '10');
+		$query 	= $this->db->get();
+		$result = $query->result(); 
+		return $result;  
+    }
+	public function getHardwareBasicDetailById($id)
+	{
+		$this->db->select('*');
+		$this->db->from('hardware_basic_tbl');
+		$this->db->where('hardware_id', $id);
+		$query 	= $this->db->get();
+		$result = $query->row(); 
+		return $result;  
+	}
+	public function getHardwareMappingById($hardware_id)
+	{
+		$this->db->select('*');
+		$this->db->from('hardware_mapping_section_tbl');
+		$this->db->where('hardware_id', $hardware_id);
+		$query 	= $this->db->get();
+		$result = $query->result(); 
+		return $result;  
+	}
+	public function getHardwareScheduleById($map_id)
+	{
+		$this->db->select('schedule_start_date,next_schedule_date');
+		$this->db->from('hardware_schedule_config_tbl');
+		$this->db->where('map_id', $map_id);
+		$query 	= $this->db->get();
+		$result = $query->row(); 
+		return $result;  
+	}
+	public function getHardwareStatus($status_id)
+	{
+		$this->db->select('status');
+		$this->db->from('master_status_tbl');
+		$this->db->where('status_code', $status_id);
+		$query 	= $this->db->get();
+		$result = $query->row(); 
+		return $result;  
+	}
+	/* public function getStatusFilter($status){
+        $hardware_stored_proc   = "CALL get_all_hardware_by_status_sp(?);";
+        $query                  = $this->db->query($hardware_stored_proc,$hardwareData);
+        $result                 = $query->result();
+        $query->next_result(); 
+        $query->free_result(); 
+        return $result; 
+    } */
+}

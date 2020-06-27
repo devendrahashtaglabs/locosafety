@@ -1,0 +1,234 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+Class Users_model extends CI_Model{
+    public function insertAdmin($data,$table){
+		$this->db->insert($table, $data);
+		$insertedId = $this->db->insert_id();
+		return $insertedId;
+    }
+    public function updateUser($data,$id,$table){
+        $this->db->where('user_info_id', $id);
+		$query = $this->db->update($table, $data);
+		return $query;
+    }
+	public function getAdmin(){
+        $this->db->select('*');
+		$this->db->from('user_details_tbl');
+		$query 	= $this->db->get();
+		$result = $query->result(); 
+		return $result; 
+    }
+	
+    /* public function getUser(){
+        $this->db->select('*');
+		$this->db->from('user_details_tbl');
+		$query 	= $this->db->get();
+		$result = $query->result(); 
+		return $result; 
+    } */
+	public function getUserInfo($id){
+        $this->db->select('*');
+		$this->db->from('user_info_tbl');
+		$this->db->where('user_info_id', $id);
+		$query 	= $this->db->get();
+		$result = $query->row(); 
+		return $result; 
+    }
+	public function getFilterUser($status){
+		$this->db->select('*');
+		$this->db->from('user_info_tbl');
+		$this->db->join('user_details_tbl', 'user_info_tbl.user_info_id = user_details_tbl.user_info_id');
+		$this->db->where('user_info_tbl.user_status', $status);
+		$query 	= $this->db->get();
+		$result = $query->result();
+        return $result;
+    }
+    public function getUserById($id){
+		$this->db->select('*');
+		$this->db->from('user_info_tbl');
+		$this->db->join('user_details_tbl', 'user_info_tbl.user_info_id = user_details_tbl.user_info_id');
+		$this->db->where('user_info_tbl.user_info_id', $id);
+		$query 	= $this->db->get();
+		$result = $query->row();
+        return $result; 
+    }
+	public function getUserEmailByZoneDivision($zoneId,$divisionId){
+        $tbl   		= "user_tbl";
+		$this->db->select('user_id');
+		$this->db->from($tbl);
+		$this->db->where('user_zone', $zoneId);
+		$this->db->where('user_division', $divisionId);
+		$query 	= $this->db->get();
+		$result = $query->result();
+		foreach($result as $userId){
+			if(!empty($userId->user_id)){  
+				$this->db->select('login_email');
+				$this->db->from('login_tbl');
+				$this->db->where('login_id', $userId->user_id);
+				$query 	= $this->db->get();
+				$result = $query->result();
+				return $result;
+			}
+		} 
+        return $result; 
+    }
+    public function getRoleType(){
+        $table      = 'master_role_tbl';
+		$this->db->from($table);
+		$this->db->where('role_status', '10');
+        $query      = $this->db->get();
+        $result     = $query->result();
+        return $result; 
+    } 
+	public function deleteUser($data,$id,$table){
+		$this->db->where('user_info_id', $id);
+		$query = $this->db->update($table, $data);
+		return $query;  
+	}
+	public function activateUser($data,$id,$table){
+		$this->db->where('user_info_id', $id);
+		$query = $this->db->update($table, $data);
+		return $query;  
+	}
+	public function changePass($data,$id,$table){
+		$this->db->where('user_info_id', $id);
+		$query = $this->db->update($table, $data);
+		return $query;  
+	}
+	public function getAllUserRole(){
+        $this->db->select('*');
+		$this->db->from('master_role_tbl');
+		$query 	= $this->db->get();
+		$result = $query->result(); 
+		return $result; 
+    }
+	public function getUserRole($user_role){
+        $this->db->select('*');
+		$this->db->from('master_role_tbl');
+		$this->db->where('role_id', $user_role);
+		$query 	= $this->db->get();
+		$result = $query->row(); 
+		return $result; 
+    }
+	public function getShopSection($shop_id){
+        $this->db->select('*');
+        $this->db->from('master_section_tbl');
+        $this->db->where('section_status', '10');
+        $this->db->where('shop_id', $shop_id);
+        $query  = $this->db->get();
+        $result = $query->result();
+		return $result; 
+    }
+	/***** Neha Code  *****/
+	public function insertUser($data){
+		//echo "<pre>";print_r($data);echo "</pre>";die(" on file ". __FILE__ ." on line ". __LINE__ );
+        $user_type      =  $data['user_type'];
+        $section_id     =  $data['section_id'];
+        $shop_id        =  $data['shop_id'];
+        $user_f_name    =  $data['user_f_name'];
+        $user_l_name    =  $data['user_l_name'];
+        $user_email     =  $data['user_email'];
+        $user_phone     =  $data['user_phone'];
+        $user_pass      =  $data['user_pass'];
+        $user_division  =  $data['user_division']; 
+        $user_zone      =  $data['user_zone'];
+        $user_country   =  $data['user_country'];
+        $user_state     =  $data['user_state'];
+        $user_city      =  $data['user_city'];
+        $user_pin   =  $data['user_pin'];
+        $user_address   =  $data['user_address'];
+        $user_dob       =  $data['user_dob'];
+        $user_gender    =  $data['user_gender'];
+        $user_profile_pic =  $data['user_profile_pic'];
+        $user_status 	=  $data['user_status'];
+        $loggedInAdmin = $data['loggedInAdmin'];
+        $currentDate = $data['currentDate'];
+        $userDataone = array(
+			'user_zone'         =>  $user_zone,
+			'user_division'     =>  $user_division,
+            'user_role'       =>  $user_type,
+            'user_email'       =>  $user_email,
+            'user_mobile'       =>  $user_phone,
+            'user_pin'       =>  $user_pin,
+            'user_pass'        =>  $user_pass, 
+            'user_status'       =>  $user_status,          
+            'user_add_date'      =>  $currentDate,
+            'user_created_by'         =>  $loggedInAdmin,       
+        );
+        $query = $this->db->insert('user_info_tbl', $userDataone);
+        $insertedId = $this->db->insert_id();
+        $userDatatwo = array(
+            'user_info_id'           =>  $insertedId,
+            'user_f_name'         =>  $user_f_name,
+            'user_l_name'     =>  $user_l_name,
+            'user_address'     =>  $user_address,
+            'user_dob'        =>  $user_dob,
+            'user_gender'           =>  $user_gender,
+            'user_profile_pic'        =>  $user_profile_pic,
+            'user_add_date'       =>  $currentDate,
+            'user_created_by'       =>  $loggedInAdmin,
+        );      
+        $query = $this->db->insert('user_details_tbl', $userDatatwo);                
+        return $query;
+       
+    }
+	public function getLoginType(){
+        $table      = 'master_role_tbl';
+		$this->db->from($table);
+		$this->db->where('role_status', '10');
+        $this->db->where('role_created_by', '2');
+        $query      = $this->db->get();
+        $result     = $query->result();
+        return $result; 
+    } 
+	 public function getStatus($user_status, $user_ids){
+        $this->db->set('user_status', $user_status);
+        $this->db->where('user_info_id', $user_ids);
+        $query = $this->db->update('user_info_tbl');
+        return $query;
+    }
+	public function getUser($loggedInAdmin){
+        $this->db->select('user_info_tbl.*,user_details_tbl.*,master_zone_tbl.zone_name AS newzonename,master_division_tbl.division_name AS newdivisionname,master_role_tbl.role_name AS newrolename');
+        $this->db->from('user_info_tbl');
+        $this->db->join('user_details_tbl', 'user_info_tbl.user_info_id = user_details_tbl.user_info_id');
+        $this->db->join('master_zone_tbl', 'user_info_tbl.user_zone=master_zone_tbl.zone_id', 'left');
+        $this->db->join('master_division_tbl', 'user_info_tbl.user_division=master_division_tbl.division_id', 'left');
+        $this->db->join('master_role_tbl', 'user_info_tbl.user_role=master_role_tbl.role_id', 'left');
+        $this->db->where('user_info_tbl.user_created_by', $loggedInAdmin);
+        $query  = $this->db->get()->result();
+        return $query;
+    }
+	 public function getUserShop(){
+        $this->db->select('*');
+        $this->db->from('master_shop_tbl');
+        $this->db->where('shop_status', 10);
+        $query  = $this->db->get();
+        $result     = $query->result();
+        // print_r($this->db->last_query());
+        // exit; 
+        return $result; 
+    }
+	public function getshopbyuser($getuserid){
+        $this->db->select('master_shop_tbl.shop_name,master_shop_tbl.shop_id');
+        $this->db->join('master_shop_tbl', 'user_mapping_tbl.shop_id = master_shop_tbl.shop_id', 'left');
+        $this->db->where(array('user_mapping_tbl.user_info_id'=>$getuserid));
+        $query = $this->db->get('user_mapping_tbl')->row();
+        return $query;
+    }
+	public function getsectionbyuser($getuserid){
+        $this->db->select('master_section_tbl.section_name,master_section_tbl.section_id');
+        $this->db->join('master_section_tbl', 'user_mapping_tbl.section_id = master_section_tbl.section_id', 'left');
+        $this->db->where(array('user_mapping_tbl.user_info_id'=>$getuserid));
+        $query = $this->db->get('user_mapping_tbl')->row();
+        // print_r($this->db->last_query());
+        // exit;
+        return $query;
+    }
+	 public function assignSection($data){
+        $query =$this->db->insert('user_mapping_tbl', $data);
+        print_r($this->db->last_query());
+        // exit; 
+        return $query;
+    }
+	/***** Neha Code  *****/
+}
